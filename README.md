@@ -16,16 +16,16 @@ Tracey,Askin,taskin7@google.com.br,Male,0f2f1ac556cae69c508023196299778d
 Simone,Neller,sneller8@privacy.gov.au,Female,64d97332c144405e5c269486986947ea
 Griz,Breffit,gbreffit9@ifeng.com,Male,c39fe6c2e102149ebf4a70d88c4ad5e8
 ```
-where we want to query entries by its key, say the hash value in the column. We could do
+where we want to query entries by its key, say the hash value in the 5th column. We could do
 ```
 $ grep d6b8e db.csv
 Smitty,Balcock,sbalcock6@flickr.com,Male,d6b8efab3b8a62ae668255c13268312a
 ```
 but this is not scalable, as grep employs a _linear search_ method.
 
-This is where **bsq** comes in to play, where it searches for the key using _binary search_. First we need to sort the database by its key column so that we can perform a binary search.
+This is where **bsq** comes into play, where it searches for the key using _binary search_. First we need to sort the database by its key column so that we can perform a binary search.
 ```
-$ sort -k5,5 -s -t, db.tsv -o db.tsv
+$ LC_ALL=C sort -k5,5 -s -t, db.tsv -o db.tsv
 ```
 Sorting is an expensive operation and should be performed only once, which is why **bsq** is intended for querying a _static_ database. To query a key, we do
 ```
@@ -55,3 +55,8 @@ g++ -std=c++14 -OO -g bsq.cc -o bsq
 # release
 g++ -std=c++14 -O3 -DNDEBUG bsq.cc -o bsq
 ```
+
+### Limitations
+- **bsq** requires the input db file to be sorted by the key
+- **bsq** only supports mmap reading of the input db file
+- **bsq** only supports prefix-match and exact-match of the search query to the key
