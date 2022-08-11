@@ -68,7 +68,6 @@ auto ExtractArgument(It &pos, It last, F &&parse) {
 
 /**
  * Simple class that is similar to std::string_view
- *
  * Also supports simple matching / comparison functionalities
  */
 struct StringBlock {
@@ -128,10 +127,10 @@ std::ostream &operator<<(std::ostream &os, const StringBlock &string) {
  * - predicate takes the iterator itself as the argument
  */
 template<typename It, typename F>
-It FindIf(It start, It ub, F pred) {
-  for (; start != ub; ++start)
-    if (pred(start)) break;
-  return start;
+It FindIf(It first, It last, F pred) {
+  for (; first != last; ++first)
+    if (pred(first)) break;
+  return first;
 }
 
 /**
@@ -144,6 +143,8 @@ void Run(Config const &config, std::string const &key) {
   auto lb = config.first;
   auto ub = config.last;
 
+  // search backward and return the starting position of the current row
+  // and store starting positions of columns within the row
   std::deque<char const *> col_pos;
   const auto FindRowBegin = [&col_pos, &config](auto pos, auto lb) {
     auto first = FindIf(std::make_reverse_iterator(pos),
@@ -158,6 +159,8 @@ void Run(Config const &config, std::string const &key) {
     return first;
   };
 
+  // search forward and return the last position of the current row
+  // and store starting positions of columns
   const auto FindRowEnd = [&col_pos, &config](auto pos, auto ub) {
     auto last = FindIf(pos, ub, [&col_pos, &config](auto pos) {
       if (*pos == config.row_sep) return true;
@@ -201,13 +204,12 @@ void Run(Config const &config, std::string const &key) {
   while (lb < ub) {
     col_pos.clear();
     auto pos = lb + (ub - lb) / 2;
-    // find the row delimiter, while saving positions of the columns delimiter
     auto first = FindRowBegin(pos, lb);
     auto last = FindRowEnd(pos, ub);
     auto column = GetColumn(first, last);
 #ifndef NDEBUG
-    std::cerr << StringBlock{first, last} << "\n";
-    std::cerr << column << "\n\n";
+    std::cerr << "*** " << StringBlock{first, last} << "\n";
+    std::cerr << "*** " << column << "\n\n";
 #endif // NDEBUG
     auto comp = search_key.Compare(column);
     if (comp >= 0) ub = first;
@@ -331,8 +333,15 @@ int main(int argc, const char **argv) {
 
     munmap(addr, sb.st_size);
 
+#ifndef NDEBUG
+    std::cerr << "\n";
+    std::cerr << "*** This is a debug build.\n";
+    std::cerr << "*** To suppress debug messages, add\n";
+    std::cerr << "*** -DNDEBUG option when compiling.\n";
+#endif // NDEBUG
+
   } catch (std::exception const &e) {
-    std::cerr << e.what() << "\n";
+    std::cerr << "Error: " << e.what() << "\n";
     exit(-1);
   }
 

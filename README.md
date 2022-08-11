@@ -2,7 +2,7 @@
 Fast query on static database with binary search
 
 ### Quick Start
-Say we have an extremely large database as a raw text file
+Suppose we have an extremely large database as a raw text file
 ```
 $ head db.tsv
 Sim,Rillett,srillett0@sphinn.com,Male,4250e9a343e164200c92e331b7bd5110
@@ -32,6 +32,7 @@ Sorting is an expensive operation and should be performed only once, which is wh
 $ ./bsq -t, -k5 db.tsv d6b8e
 Smitty,Balcock,sbalcock6@flickr.com,Male,d6b8efab3b8a62ae668255c13268312a
 ```
+In a test case with a db file of size > 300GB, it took ~ 120s for grep to fetch the entry while it took **bsq** mere 0.005s.
 
 ### Usage
 ```
@@ -47,13 +48,13 @@ KEY: search key(s).  Each key will be searched independently.
 Default: read from stdin delimited by LF
 ```
 
-### Compile
+### Build
 ```
-# debug: will print debugging info to stderr
-g++ -std=c++14 -OO -g bsq.cc -o bsq
+# release version
+make
 
-# release
-g++ -std=c++14 -O3 -DNDEBUG bsq.cc -o bsq
+# debug version with debug info
+make debug
 ```
 
 ### Limitations
