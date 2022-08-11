@@ -32,7 +32,7 @@ Sorting is an expensive operation and should be performed only once, which is wh
 $ ./bsq -t, -k5 db.tsv d6b8e
 Smitty,Balcock,sbalcock6@flickr.com,Male,d6b8efab3b8a62ae668255c13268312a
 ```
-In a test case with a db file of size > 300GB, it took ~ 120s for grep to fetch the entry while it took **bsq** mere 0.005s.
+In a test case with a db file of size > 300GB, it took ~120s for grep to fetch the entry while it took **bsq** mere 0.005s.
 
 ### Usage
 ```
@@ -44,7 +44,7 @@ Usage: ./bsq [-t CHAR] [-k N] [-w] [-h] FILE [KEY...]
 -c: check if the input is sorted. No search is performed
 -h: print this message
 FILE: input file to be read using mmap. Must be sorted by the key column
-KEY: search key(s).  Each key will be searched independently.
+KEY: search key(s). Each key will be searched independently.
 Default: read from stdin delimited by LF
 ```
 

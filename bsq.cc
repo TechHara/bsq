@@ -22,7 +22,7 @@ int Usage(std::string const &program) {
   std::cerr << "\t-h: print this message\n";
   std::cerr << "\tFILE: input file to be read using mmap."
                " Must be sorted by the key column\n";
-  std::cerr << "\tKEY: search key(s). "
+  std::cerr << "\tKEY: search key(s)."
             << " Each key will be searched independently.\n";
   std::cerr << "\tDefault: read from stdin delimited by LF\n";
 
