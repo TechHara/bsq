@@ -14,11 +14,12 @@
 
 int Usage(std::string const &program) {
   std::cerr << "Usage: " << program
-            << " [-t CHAR] [-k N] [-w] [-h] FILE [KEY...]\n";
+            << " [-t CHAR] [-k N] [-w] [-f] [-h] FILE [KEY...]\n";
   std::cerr << "\t-t CHAR: column separator. Default: tab\n";
   std::cerr << "\t-k N: key column index. Default: 1\n";
   std::cerr << "\t-w: exact match only. Default: prefix match\n";
   std::cerr << "\t-c: check if the input is sorted. No search is performed\n";
+  std::cerr << "\t-f: fold to upper case for keys\n";
   std::cerr << "\t-h: print this message\n";
   std::cerr << "\tFILE: input file to be read using mmap."
                " Must be sorted by the key column\n";
@@ -34,6 +35,7 @@ struct Config {
   char row_sep = '\n';
   bool check = false;
   bool exact_match = false;
+  bool fold = false;
   uint8_t col = 1;
   // mmap
   char const *first = nullptr;
@@ -94,33 +96,37 @@ struct StringBlock {
    *   0 if *this == that
    * > 0 if *this > that
    * based on lexicographical ordering
+   * where f(.) is applied to each char
    */
-  long Compare(StringBlock const &that) const noexcept {
+  template<typename F>
+  long Compare(StringBlock const &that, F f) const noexcept {
     auto pos1 = first;
     auto pos2 = that.first;
     while (pos1 < last && pos2 < that.last) {
-      if (*pos1 == *pos2) ++pos1, ++pos2;
-      else return *pos2 - *pos1;
+      if (f(*pos1) == f(*pos2)) ++pos1, ++pos2;
+      else return f(*pos2) - f(*pos1);
     }
     // at least one of the parentheses is zero
     return (that.last - pos2) - (last - pos1);
   }
 
-  bool IsPrefixOf(StringBlock const &that) const noexcept {
+  template<typename F>
+  bool IsPrefixOf(StringBlock const &that, F f) const noexcept {
     if (Distance() > that.Distance()) return false;
     auto pos1 = first;
     auto pos2 = that.first;
     while (pos1 < last && pos2 < that.last) {
-      if (*pos1 == *pos2) ++pos1, ++pos2;
+      if (f(*pos1) == f(*pos2)) ++pos1, ++pos2;
       else return false;
     }
     return pos1 == last;
   }
+
+  friend std::ostream &operator<<(std::ostream &os, const StringBlock &string) {
+    return os.write(string.first, string.Distance());
+  }
 };
 
-std::ostream &operator<<(std::ostream &os, const StringBlock &string) {
-  return os.write(string.first, string.Distance());
-}
 
 /**
  * Same as std::find_if, except:
@@ -178,6 +184,22 @@ void Run(Config const &config, std::string const &key) {
     return StringBlock{col_pos[config.col - 1], col_pos[config.col] - 1};
   };
 
+  const auto Compare =
+      [&config](StringBlock const &a, StringBlock const &b) noexcept {
+        if (config.fold)
+          return a.Compare(b, [](auto c) { return std::toupper(c); });
+        else
+          return a.Compare(b, [](auto c) { return c; });
+      };
+
+  const auto IsPrefixOf =
+      [&config](StringBlock const &a, StringBlock const &b) noexcept {
+        if (config.fold)
+          return a.IsPrefixOf(b, [](auto c) { return std::toupper(c); });
+        else
+          return a.IsPrefixOf(b, [](auto c) { return c; });
+      };
+
   if (config.check) {
     StringBlock prev{lb, lb}; // empty
     while (lb < ub) {
@@ -186,9 +208,9 @@ void Run(Config const &config, std::string const &key) {
       auto first = lb;
       auto last = FindRowEnd(lb, ub);
       auto column = GetColumn(first, last);
-      if (prev.Compare(column) < 0) {
+      if (Compare(prev, column) < 0)
         HandleError("Unordered at row:\n" + std::string(first, last));
-      }
+
       lb = last + 1;
       prev = column;
     }
@@ -211,16 +233,16 @@ void Run(Config const &config, std::string const &key) {
     std::cerr << "*** " << StringBlock{first, last} << "\n";
     std::cerr << "*** " << column << "\n\n";
 #endif // NDEBUG
-    auto comp = search_key.Compare(column);
-    if (comp >= 0) ub = first;
+
+    if (Compare(search_key, column) >= 0) ub = first;
     else lb = last + 1;
   }
 
-  const auto IsExactMatch = [](const auto &key, const auto &col) {
-    return key.Compare(col) == 0;
+  const auto IsExactMatch = [&Compare](const auto &key, const auto &col) {
+    return Compare(key, col) == 0;
   };
-  const auto IsPrefixMatch = [](const auto &key, const auto &col) {
-    return key.IsPrefixOf(col);
+  const auto IsPrefixMatch = [&IsPrefixOf](const auto &key, const auto &col) {
+    return IsPrefixOf(key, col);
   };
 
   ub = config.last;
@@ -269,6 +291,7 @@ int main(int argc, const char **argv) {
             return Usage(args.front());
           case 'c':
           case 'w':
+          case 'f':
             std::for_each(it->begin() + 1, it->end(), [&config](char c) {
               switch (c) {
                 case 'w':
@@ -276,6 +299,9 @@ int main(int argc, const char **argv) {
                   break;
                 case 'c':
                   config.check = true;
+                  break;
+                case 'f':
+                  config.fold = true;
                   break;
                 default:
                   HandleError("Invalid option: -" + std::string(1, c));
