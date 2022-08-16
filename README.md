@@ -36,16 +36,16 @@ In a test case with a db file of size > 300GB, it took ~120s for grep to fetch t
 
 ### Usage
 ```
-$ ./bsq -h
-Usage: ./bsq [-t CHAR] [-k N] [-w] [-h] FILE [KEY...]
--t CHAR: column separator. Default: tab
--k N: key column index. Default: 1
--w: exact match only. Default: prefix match
--c: check if the input is sorted. No search is performed
--h: print this message
-FILE: input file to be read using mmap. Must be sorted by the key column
-KEY: search key(s). Each key will be searched independently.
-Default: read from stdin delimited by LF
+Usage: ./bsq [-t CHAR] [-k N] [-w] [-f] [-h] FILE [KEY...]
+	-t CHAR: column separator. Default: tab
+	-k N: key column index. Default: 1
+	-w: exact match only. Default: prefix match
+	-c: check if the input is sorted. No search is performed
+	-f: fold to upper case for keys
+	-h: print this message
+	FILE: input file to be read using mmap. Must be sorted by the key column
+	KEY: search key(s). Each key will be searched independently.
+	Default: read from stdin delimited by LF
 ```
 
 ### Build
